@@ -1,0 +1,51 @@
+[gd_scene load_steps=6 format=3 uid="uid://ca75jqr8tg7q6"]
+
+[ext_resource type="Script" uid="uid://2tlr4y0vqhar" path="res://Scripts/RobotController.gd" id="1_2vrla"]
+[ext_resource type="Texture2D" uid="uid://1iqkrtqfnt48" path="res://Assets/Robot/svgviewer-output.svg" id="1_lp65t"]
+[ext_resource type="Script" uid="uid://dugyvjshfne2j" path="res://Scripts/sensors.gd" id="2_6phhs"]
+[ext_resource type="Script" uid="uid://c7nrdcbdgdnln" path="res://micro_controller.gd" id="4_dwnub"]
+
+[sub_resource type="ConvexPolygonShape2D" id="ConvexPolygonShape2D_2vrla"]
+points = PackedVector2Array(30, 28, 30, -18, 27, -27, 20, -35, 0, -40, -20, -35, -27, -27, -30, -18, -30, 28, -18, 28, 18, 28)
+
+[node name="Robot" type="CharacterBody2D"]
+script = ExtResource("1_2vrla")
+
+[node name="Sensors" type="Node2D" parent="." node_paths=PackedStringArray("front_sensor", "left_sensor", "right_sensor")]
+script = ExtResource("2_6phhs")
+front_sensor = NodePath("front_sensor")
+left_sensor = NodePath("left_sensor")
+right_sensor = NodePath("right_sensor")
+
+[node name="front_sensor" type="RayCast2D" parent="Sensors"]
+position = Vector2(0, -35)
+target_position = Vector2(0, -25)
+collide_with_areas = true
+
+[node name="left_sensor" type="RayCast2D" parent="Sensors"]
+position = Vector2(-25, -25)
+rotation = -1.5708
+target_position = Vector2(0, -25)
+collide_with_areas = true
+
+[node name="right_sensor" type="RayCast2D" parent="Sensors"]
+position = Vector2(25, -25)
+rotation = 1.5708
+target_position = Vector2(0, -25)
+collide_with_areas = true
+
+[node name="Wheels" type="Node2D" parent="."]
+
+[node name="LeftWheel" type="Sprite2D" parent="Wheels"]
+
+[node name="RightWheel" type="Sprite2D" parent="Wheels"]
+
+[node name="Svgviewer-output" type="Sprite2D" parent="."]
+texture = ExtResource("1_lp65t")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("ConvexPolygonShape2D_2vrla")
+
+[node name="MicroController" type="Node2D" parent="." node_paths=PackedStringArray("sensors_node")]
+script = ExtResource("4_dwnub")
+sensors_node = NodePath("../Sensors")

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+
+  <!-- Body: squashed semicircle + shorter narrow rear -->
+  <path
+    d="
+      M30 42
+      A30 22 0 0 1 90 42
+
+      L78 42
+      L78 88
+      L42 88
+      L42 42
+      Z
+    "
+    fill="#4A90E2"
+  />
+
+  <!-- Front wheels (pushed forward, barely clearing the nose) -->
+  <rect x="32" y="44" width="10" height="30" rx="3" fill="#333"/>
+  <rect x="78" y="44" width="10" height="30" rx="3" fill="#333"/>
+
+</svg>
