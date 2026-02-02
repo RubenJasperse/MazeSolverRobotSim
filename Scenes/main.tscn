@@ -1,9 +1,18 @@
-[gd_scene load_steps=2 format=3 uid="uid://wthlj4pk6xm1"]
+[gd_scene load_steps=4 format=3 uid="uid://wthlj4pk6xm1"]
 
 [ext_resource type="PackedScene" uid="uid://ca75jqr8tg7q6" path="res://Scenes/robot.tscn" id="1_jjgbg"]
+[ext_resource type="PackedScene" uid="uid://hun0h03s1xbd" path="res://Scenes/maze_generator.tscn" id="2_bo1nx"]
+[ext_resource type="Script" uid="uid://cbm7g1c13kg6c" path="res://Scripts/simulation_handler.gd" id="3_8gbba"]
 
 [node name="main" type="Node2D"]
 
+[node name="MazeGenerator" parent="." instance=ExtResource("2_bo1nx")]
+
 [node name="Robot" parent="." instance=ExtResource("1_jjgbg")]
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="Robot"]
+
+[node name="SimulationHandler" type="Node2D" parent="." node_paths=PackedStringArray("robot", "maze_generator")]
+script = ExtResource("3_8gbba")
+robot = NodePath("../Robot")
+maze_generator = NodePath("../MazeGenerator")

@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://hun0h03s1xbd"]
+
+[ext_resource type="Script" uid="uid://dl23ygsu64cr7" path="res://Scripts/maze_generator.gd" id="1_ov4dq"]
+
+[node name="MazeGenerator" type="Node2D"]
+script = ExtResource("1_ov4dq")
+goal_in_center = false

@@ -10,7 +10,8 @@ func _ready():
 	print("Initial sensor readings: ", sensor_data)
 
 func _process(_delta: float) -> void:
-	print(get_sensor_data())
+	#print(get_sensor_data())
+	pass
 	
 # Api
 func get_sensor_data() -> Dictionary:
