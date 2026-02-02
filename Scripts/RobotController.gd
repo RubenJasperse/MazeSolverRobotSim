@@ -6,7 +6,8 @@ var left_speed := 00.0
 var right_speed := 00.0
 
 func _physics_process(delta):
-	
+
+# Remove Later on!	
 	right_speed = 0
 	left_speed = 0
 		

@@ -13,7 +13,7 @@ config_version=5
 config/name="MazeSolverSim"
 run/main_scene="uid://wthlj4pk6xm1"
 config/features=PackedStringArray("4.4", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="res://Assets/Robot/icon.svg"
 
 [input]
 
