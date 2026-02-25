@@ -15,10 +15,25 @@ class_name RobotSensors
 @export var gyro_noise_level: float = 0.0    # deg/s noise
 @export var accel_noise_level: float = 0.0   # m/s² noise
 @export var mag_noise_level: float = 0.0     # μT noise
+@export var magnetic_declination: float = 0.0  # Rotate magnetic north if desired (deg)
+
+# Sim Configuration
+@export var sensor_update_delay: float = 0.0  # Simulate processing delay (ms)
 
 # Calibration
 var gyro_reference_angle: float = 0.0
 var imu_calibrated: bool = false
+
+# Accelerometer tracking variables
+var previous_velocity: Vector2 = Vector2.ZERO
+var previous_position: Vector2 = Vector2.ZERO
+var last_accel_update: float = 0.0
+
+# Gyro tracking variables
+var last_gyro_angle: float = 0.0
+var last_gyro_update: float = 0.0
+
+# --------------------------------------------------------------------
 
 func _ready():
 	configure_sensors()
@@ -28,16 +43,17 @@ func configure_sensors():
 	# Configure ToF sensors
 	if front_sensor:
 		front_sensor.target_position = Vector2(front_sensor_range, 0)
+		front_sensor.rotation_degrees = -90 # Raycasts start pointing to right (from robot pov) so this rotates them to front
 		front_sensor.enabled = true
 	
 	if left_sensor:
 		left_sensor.target_position = Vector2(left_sensor_range, 0)
-		left_sensor.rotation_degrees = -90  # Point left
+		left_sensor.rotation_degrees = 180
 		left_sensor.enabled = true
 	
 	if right_sensor:
 		right_sensor.target_position = Vector2(right_sensor_range, 0)
-		right_sensor.rotation_degrees = 90   # Point right
+		right_sensor.rotation_degrees = 0
 		right_sensor.enabled = true
 
 func calibrate_sensors():
@@ -45,14 +61,15 @@ func calibrate_sensors():
 	gyro_reference_angle = get_parent().global_rotation_degrees
 	imu_calibrated = true
 
-func reset_gyro_calibration():
-	gyro_reference_angle = get_parent().global_rotation_degrees
-
 # --------------------------------------------------------------------
 # ToF SENSORS
 # --------------------------------------------------------------------
 
 func get_sensor_data() -> Dictionary:
+		# Simulate processing delay
+	if sensor_update_delay > 0:
+		await get_tree().create_timer(sensor_update_delay / 1000.0).timeout
+	
 	# Return all sensor data
 	return {
 		"tof": get_tof_data(),
@@ -100,83 +117,140 @@ func get_gyro_data() -> Dictionary:
 	if not robot:
 		return {"angle": 0.0, "angular_velocity": 0.0}
 	
+	var current_time = Time.get_ticks_msec() / 1000.0  # Convert to seconds
 	var current_angle = robot.global_rotation_degrees
 	var relative_angle = wrapf(current_angle - gyro_reference_angle, -180.0, 180.0)
 	
-	# Add noise
-	var noisy_angle = relative_angle + randf_range(-gyro_noise_level, gyro_noise_level)
-	var noisy_velocity = randf_range(-gyro_noise_level, gyro_noise_level)
+	# Calculate angular velocity based on angle change
+	var angular_velocity = 0.0
+	if last_gyro_update > 0:
+		var delta_time = current_time - last_gyro_update
+		if delta_time > 0:
+			# Calculate angle change since last update
+			var angle_change = current_angle - last_gyro_angle
+			# Handle wrap-around (e.g., going from 359 to 1 degree)
+			if angle_change > 180:
+				angle_change -= 360
+			elif angle_change < -180:
+				angle_change += 360
+			
+			angular_velocity = angle_change / delta_time
+	
+	# Add noise to the measured values (not random values)
+	var noisy_angle = relative_angle + randf_range(-gyro_noise_level * 0.01, gyro_noise_level * 0.01)
+	var noisy_velocity = angular_velocity + randf_range(-gyro_noise_level, gyro_noise_level)
+	
+	# Store values for next update
+	last_gyro_angle = current_angle
+	last_gyro_update = current_time
 	
 	return {
 		"angle": noisy_angle,
 		"angular_velocity": noisy_velocity,
-		"absolute_angle": current_angle,
-		"calibrated": true
+		"calibrated": true,
+		"angle_units": "deg", # For Clarity can be Removed
+		"velocity_units": "deg/s"
 	}
 
 func get_accelerometer_data() -> Dictionary:
-	# Accelerometer: 2D acceleration (X: forward/back, Y: left/right)
-	var noisy_x = randf_range(-accel_noise_level, accel_noise_level)
-	var noisy_y = randf_range(-accel_noise_level, accel_noise_level)
+	# Accelerometer: 2D acceleration in robot's local frame
+	# X: forward/back, Y: left/right
+	var robot = get_parent()
+	if not robot:
+		return {"x": 0.0, "y": 0.0, "magnitude": 0.0, "units": "m/s²"}
+	
+	var current_time = Time.get_ticks_msec() / 1000.0  # Convert to seconds
+	var current_position = robot.global_position
+	
+	# Calculate velocity based on position change
+	var current_velocity = Vector2.ZERO
+	if last_accel_update > 0:
+		var delta_time = current_time - last_accel_update
+		if delta_time > 0:
+			current_velocity = (current_position - previous_position) / delta_time
+	
+	# Calculate acceleration (change in velocity)
+	var acceleration_world = Vector2.ZERO
+	if previous_velocity != Vector2.ZERO:
+		var delta_time = current_time - last_accel_update
+		if delta_time > 0:
+			acceleration_world = (current_velocity - previous_velocity) / delta_time
+	
+	# Gravity vector in world space (pointing down in Y axis)
+	var gravity_world = Vector2(0, 9.81)  # 9.81 m/s² downward
+	
+	# Combine linear acceleration with gravity
+	var total_accel_world = acceleration_world + gravity_world
+	
+	# Convert to robot's local frame
+	var robot_rotation = robot.global_rotation
+	var acceleration_local = Vector2(
+		total_accel_world.rotated(-robot_rotation).x,  # Forward/back
+		-total_accel_world.rotated(-robot_rotation).y   # Left/right (inverted because Y is down in world)
+	)
+	
+	# Add noise
+	var noisy_x = acceleration_local.x + randf_range(-accel_noise_level, accel_noise_level)
+	var noisy_y = acceleration_local.y + randf_range(-accel_noise_level, accel_noise_level)
 	var magnitude = sqrt(noisy_x * noisy_x + noisy_y * noisy_y)
+	
+	# Store values for next update
+	previous_position = current_position
+	previous_velocity = current_velocity
+	last_accel_update = current_time
 	
 	return {
 		"x": noisy_x,
 		"y": noisy_y,
 		"magnitude": magnitude,
-		"units": "m/s²"
+		"accel_units": "m/s²"
 	}
 
 func get_magnetometer_data() -> Dictionary:
-	# Magnetometer: 2D magnetic field and compass heading
-	var earth_field_horizontal = 25.0  # μT
-	var north_direction = 0.0  # 0° = East, 90° = North
+	var earth_field_strength = 25.0  # μT
 	
-	# World magnetic field vector
-	var world_angle = deg_to_rad(north_direction)
-	var mag_world_x = earth_field_horizontal * cos(world_angle)
-	var mag_world_y = earth_field_horizontal * sin(world_angle)
+	# Earth magnetic field in world frame
+	var world_angle = deg_to_rad(magnetic_declination)
+	var mag_world = Vector2(
+		earth_field_strength * cos(world_angle),
+		earth_field_strength * sin(world_angle)
+	)
 	
-	# Rotate to robot local coordinates
 	var robot = get_parent()
 	if not robot:
 		return {"x": 0.0, "y": 0.0, "heading": 0.0}
 	
-	var robot_angle = robot.global_rotation
-	var cos_t = cos(robot_angle)
-	var sin_t = sin(robot_angle)
-	
-	var local_x = mag_world_x * cos_t + mag_world_y * sin_t
-	var local_y = -mag_world_x * sin_t + mag_world_y * cos_t
+	# Convert world field to robot local frame
+	var local_field = mag_world.rotated(-robot.global_rotation)
 	
 	# Add noise
-	var noisy_x = local_x + randf_range(-mag_noise_level, mag_noise_level)
-	var noisy_y = local_y + randf_range(-mag_noise_level, mag_noise_level)
+	var noisy_x = local_field.x + randf_range(-mag_noise_level, mag_noise_level)
+	var noisy_y = local_field.y + randf_range(-mag_noise_level, mag_noise_level)
 	
-	# Calculate heading
-	var heading = calculate_magnetic_heading_2d(noisy_x, noisy_y, north_direction)
-	var magnitude = sqrt(noisy_x * noisy_x + noisy_y * noisy_y)
+	var heading = calculate_magnetic_heading_2d(noisy_x, noisy_y)
 	
 	return {
 		"x": noisy_x,
 		"y": noisy_y,
 		"heading": heading,
-		"magnitude": magnitude,
-		"units": "μT"
+		"magnitude": sqrt(noisy_x * noisy_x + noisy_y * noisy_y),
+		"field_units": "μT",
+		"heading_units": "deg"
 	}
 
-func calculate_magnetic_heading_2d(mag_x: float, mag_y: float, north_dir: float = 0.0) -> float:
-	# Convert magnetometer readings to compass heading (0° = North)
+func calculate_magnetic_heading_2d(mag_x: float, mag_y: float) -> float:
 	if abs(mag_x) < 0.001 and abs(mag_y) < 0.001:
 		return 0.0
 	
-	var sensor_angle = rad_to_deg(atan2(mag_y, mag_x))
-	return wrapf(90.0 - sensor_angle + north_dir, 0.0, 360.0)
+	var angle = rad_to_deg(atan2(mag_y, mag_x))
+	
+	return wrapf(angle, 0.0, 360.0)
 
 # --------------------------------------------------------------------
 # Single Sensor GETTERS
 # --------------------------------------------------------------------
 
+# ToF Sensor Getters
 func get_front_distance() -> float:
 	return get_sensor_distance(front_sensor, front_sensor_range)
 
@@ -186,6 +260,7 @@ func get_left_distance() -> float:
 func get_right_distance() -> float:
 	return get_sensor_distance(right_sensor, right_sensor_range)
 
+# Gyroscope Getters
 func get_gyro_angle() -> float:
 	var data = get_gyro_data()
 	return data.get("angle", 0.0)
@@ -194,6 +269,40 @@ func get_gyro_velocity() -> float:
 	var data = get_gyro_data()
 	return data.get("angular_velocity", 0.0)
 
+# Accelerometer Getters
+func get_acceleration_x() -> float:
+	var data = get_accelerometer_data()
+	return data.get("x", 0.0)
+
+func get_acceleration_y() -> float:
+	var data = get_accelerometer_data()
+	return data.get("y", 0.0)
+
+func get_acceleration_magnitude() -> float:
+	var data = get_accelerometer_data()
+	return data.get("magnitude", 0.0)
+
+func get_acceleration_vector() -> Vector2:
+	var data = get_accelerometer_data()
+	return Vector2(data.get("x", 0.0), data.get("y", 0.0))
+
+# Magnetometer Getters
 func get_compass_heading() -> float:
 	var data = get_magnetometer_data()
 	return data.get("heading", 0.0)
+
+func get_magnetometer_x() -> float:
+	var data = get_magnetometer_data()
+	return data.get("x", 0.0)
+
+func get_magnetometer_y() -> float:
+	var data = get_magnetometer_data()
+	return data.get("y", 0.0)
+
+func get_magnetometer_magnitude() -> float:
+	var data = get_magnetometer_data()
+	return data.get("magnitude", 0.0)
+
+func get_magnetometer_vector() -> Vector2:
+	var data = get_magnetometer_data()
+	return Vector2(data.get("x", 0.0), data.get("y", 0.0))
