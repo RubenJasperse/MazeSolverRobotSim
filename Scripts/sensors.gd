@@ -62,7 +62,7 @@ func calibrate_sensors():
 	imu_calibrated = true
 
 # --------------------------------------------------------------------
-# ToF SENSORS
+# SENSORS
 # --------------------------------------------------------------------
 
 func get_sensor_data() -> Dictionary:
@@ -75,6 +75,10 @@ func get_sensor_data() -> Dictionary:
 		"tof": get_tof_data(),
 		"imu": get_imu_data()
 	}
+
+# --------------------------------------------------------------------
+# ToF SENSORS
+# --------------------------------------------------------------------
 
 func get_tof_data() -> Dictionary:
 	# Return ToF distances

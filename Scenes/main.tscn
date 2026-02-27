@@ -12,7 +12,10 @@
 
 [node name="Camera2D" type="Camera2D" parent="Robot"]
 
-[node name="SimulationHandler" type="Node2D" parent="." node_paths=PackedStringArray("robot", "maze_generator")]
+[node name="SimulationHandler" type="Node2D" parent="." node_paths=PackedStringArray("robot", "maze_generator", "microcontroller")]
 script = ExtResource("3_8gbba")
 robot = NodePath("../Robot")
 maze_generator = NodePath("../MazeGenerator")
+microcontroller = NodePath("../Robot/MicroController")
+
+[editable path="Robot"]
