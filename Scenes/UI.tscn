@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://bjtwvhvapolgc"]
+
+[ext_resource type="Script" uid="uid://cqirkn0nhcog1" path="res://Scripts/ui_handler.gd" id="1_w371h"]
+
+[node name="CanvasLayer" type="CanvasLayer" unique_id=1672073046]
+script = ExtResource("1_w371h")
+
+[node name="UI" type="Control" parent="." unique_id=1818794135]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ImportButton" type="Button" parent="UI" unique_id=1415428555]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+text = "Import"
+
+[node name="ExportButton" type="Button" parent="UI" unique_id=701035741]
+layout_mode = 0
+offset_left = 64.0
+offset_right = 123.0
+offset_bottom = 31.0
+text = "Export"
+
+[connection signal="pressed" from="UI/ImportButton" to="." method="_on_import_button_pressed"]
+[connection signal="pressed" from="UI/ExportButton" to="." method="_on_export_button_pressed"]

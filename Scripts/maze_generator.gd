@@ -18,10 +18,8 @@ class_name MazeGenerator
 		if is_inside_tree():
 			regenerate()
 
-# Goal placement
 @export var goal_in_center: bool = true
 
-# Generation algorithm selection
 enum GenerationAlgorithm { PRIM, KRUSKAL, CUSTOM }
 @export var algorithm: GenerationAlgorithm = GenerationAlgorithm.PRIM:
 	set(value):
@@ -29,7 +27,6 @@ enum GenerationAlgorithm { PRIM, KRUSKAL, CUSTOM }
 		if is_inside_tree():
 			regenerate()
 
-# Maze Colors
 @export var wall_color: Color = Color.BLACK
 @export var start_color: Color = Color.GREEN
 @export var goal_color: Color = Color.RED
@@ -43,11 +40,11 @@ enum GenerationAlgorithm { PRIM, KRUSKAL, CUSTOM }
 var walls_node: Node2D
 var floor_node: Node2D
 
-# Maze structure - lines with walls are in between cells
+# Maze structure; walls are in between cells
 var vertical_walls: Array = []    # Walls to the right of each cell
 var horizontal_walls: Array = []  # Walls below each cell
 
-# Start and goal locations (in cell coordinates)
+# Start and goal locations (in cell coords)
 var start_cell: Vector2i
 var goal_cell: Vector2i
 
@@ -59,7 +56,7 @@ func _ready():
 	_initialize_nodes()
 	generate_maze()
 
-# Create or get the Walls and Floor container nodes
+# Create or get Walls and Floor container nodes
 func _initialize_nodes():
 	walls_node = _get_or_create_child("Walls")
 	floor_node = _get_or_create_child("Floor")
@@ -110,7 +107,7 @@ func generate_maze():
 	# Create visual representation
 	_create_visuals()
 
-# Initialize wall arrays - all walls start as closed ( = true)
+# Initialize wall arrays; all walls start as closed ( = true)
 func _initialize_walls():
 	vertical_walls.clear()
 	horizontal_walls.clear()
@@ -125,8 +122,6 @@ func _initialize_walls():
 # ==============================================================================
 # PRIM'S ALGORITHM - Randomized maze generation
 # ==============================================================================
-# Starts from a random cell and expands outward, randomly selecting
-# frontier cells to connect to the maze
 
 func _generate_prim():
 	var frontier = []
@@ -138,7 +133,6 @@ func _generate_prim():
 	visited[start_y][start_x] = true
 	frontier.append([start_x, start_y, -1, -1])  # [x, y, from_x, from_y]
 	
-	# Expand maze until all cells are visited
 	while frontier.size() > 0:
 		# Pick random frontier cell
 		var current = frontier.pop_at(randi() % frontier.size())
@@ -147,11 +141,9 @@ func _generate_prim():
 		var from_x = current[2]
 		var from_y = current[3]
 		
-		# Remove wall between this cell and the cell it came from
 		if from_x != -1:
 			_remove_wall_between(from_x, from_y, x, y)
 		
-		# Add unvisited neighbors to the frontier
 		for neighbor in _get_unvisited_neighbors(x, y, visited):
 			var nx = neighbor[0]
 			var ny = neighbor[1]
@@ -159,7 +151,6 @@ func _generate_prim():
 				visited[ny][nx] = true
 				frontier.append([nx, ny, x, y])
 
-# Get all neighbors of a cell that haven't been visited
 func _get_unvisited_neighbors(x: int, y: int, visited: Array) -> Array:
 	var neighbors = []
 	var directions = [[0, -1], [1, 0], [0, 1], [-1, 0]]
@@ -185,15 +176,13 @@ func _remove_wall_between(x1: int, y1: int, x2: int, y2: int):
 # ==============================================================================
 # KRUSKAL'S ALGORITHM
 # ==============================================================================
-# Treats each cell as a separate set and randomly connects sets until
-# all cells are in one connected set
 
 func _generate_kruskal():
 	var edges = []
-	var parent = []  # Union-find parent array
-	var rank = []    # Union-find rank array
+	var parent = []
+	var rank = []
 	
-	# Initialize union-find structure - each cell is its own set
+	# Initialize union-find structure; each cell is its own set
 	for i in range(maze_width * maze_height):
 		parent.append(i)
 		rank.append(0)
@@ -206,7 +195,6 @@ func _generate_kruskal():
 			if y < maze_height - 1:
 				edges.append([x, y, x, y + 1])  # Down neighbor
 	
-	# Randomize edge order
 	_shuffle_array(edges)
 	
 	# Process edges - connect cells if they're not already connected
@@ -214,7 +202,6 @@ func _generate_kruskal():
 		var id1 = edge[1] * maze_width + edge[0]
 		var id2 = edge[3] * maze_width + edge[2]
 		
-		# If cells are in different sets, connect them
 		if _find(parent, id1) != _find(parent, id2):
 			_union(parent, rank, id1, id2)
 			_remove_wall_between(edge[0], edge[1], edge[2], edge[3])
@@ -422,7 +409,9 @@ func get_cell_at_position(pos: Vector2) -> Vector2:
 
 # Save maze to file
 func save_maze(filename: String):
-	var file = FileAccess.open("user://" + filename, FileAccess.WRITE)
+	print("Saved Maze")
+	var path = "user://" + filename
+	var file = FileAccess.open(path, FileAccess.WRITE)
 	if file:
 		var data = {
 			"width": maze_width,
@@ -434,22 +423,37 @@ func save_maze(filename: String):
 		}
 		file.store_string(JSON.stringify(data))
 		file.close()
+	else:
+		push_error("MazeGenerator: Failed to save maze to '%s'. Error: %s" % [path, FileAccess.get_open_error()])
 
 # Load maze from file
 func load_maze(filename: String):
-	var file = FileAccess.open("user://" + filename, FileAccess.READ)
+	var path = "user://" + filename
+	if not FileAccess.file_exists(path):
+		push_error("MazeGenerator: Save file '%s' does not exist." % path)
+		return
+
+	var file = FileAccess.open(path, FileAccess.READ)
 	if file:
-		var data = JSON.parse_string(file.get_as_text())
+		var content = file.get_as_text()
 		file.close()
-		
-		if data:
-			maze_width = data.get("width", 16)
-			maze_height = data.get("height", 16)
-			vertical_walls = data.get("vertical_walls", [])
-			horizontal_walls = data.get("horizontal_walls", [])
-			seed_value = data.get("seed", 0)
-			algorithm = data.get("algorithm", GenerationAlgorithm.PRIM)
-			
-			_clear_children(walls_node)
-			_clear_children(floor_node)
-			_create_visuals()
+
+		var json = JSON.new()
+		var error = json.parse(content)
+		if error != OK:
+			push_error("MazeGenerator: Failed to parse maze JSON from '%s'." % path)
+			return
+
+		var data = json.get_data()
+		maze_width = data.get("width", 16)
+		maze_height = data.get("height", 16)
+		vertical_walls = data.get("vertical_walls", [])
+		horizontal_walls = data.get("horizontal_walls", [])
+		seed_value = data.get("seed", 0)
+		algorithm = data.get("algorithm", GenerationAlgorithm.PRIM)
+
+		_clear_children(walls_node)
+		_clear_children(floor_node)
+		_create_visuals()
+	else:
+		push_error("MazeGenerator: Failed to open '%s' for reading. Error: %s" % [path, FileAccess.get_open_error()])

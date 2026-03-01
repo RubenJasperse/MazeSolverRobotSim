@@ -5,26 +5,18 @@ extends CharacterBody2D
 var left_speed := 0.0
 var right_speed := 0.0
 
-var rampup := 2
-var d1 := 0.0
-var d2 := 0.0
-
 func _physics_process(delta):
 
-# Remove later	-------------------------
-	right_speed = 0
-	left_speed = 0
+# Manual Sim Control ----------------------
 		
 	if Input.is_action_pressed("left"):
-		left_speed = lerp(0, 400, d1)
-		d1 = clampf(d1 + (delta * rampup), 0, 1)
-	else:
-		d1 = 0
+		left_speed = 400
 	if Input.is_action_pressed("right"):
-		right_speed = lerp(0, 400, d2)
-		d2 = clampf(d2 + (delta * rampup), 0, 1)
-	else:
-		d2 = 0
+		right_speed = 400
+	if Input.is_action_just_released("left"):
+		left_speed = 0
+	if Input.is_action_just_released("right"):
+		right_speed = 0	
 # ----------------------------------------
 	
 	
@@ -35,3 +27,8 @@ func _physics_process(delta):
 	velocity = Vector2(0, -v).rotated(rotation)
 
 	move_and_slide()
+
+func set_motor_speeds(left: float, right: float):
+	left_speed = left
+	right_speed = right
+	return

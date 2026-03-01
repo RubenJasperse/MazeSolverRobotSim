@@ -1,21 +1,30 @@
-[gd_scene load_steps=4 format=3 uid="uid://wthlj4pk6xm1"]
+[gd_scene format=3 uid="uid://wthlj4pk6xm1"]
 
 [ext_resource type="PackedScene" uid="uid://ca75jqr8tg7q6" path="res://Scenes/robot.tscn" id="1_jjgbg"]
 [ext_resource type="PackedScene" uid="uid://hun0h03s1xbd" path="res://Scenes/maze_generator.tscn" id="2_bo1nx"]
 [ext_resource type="Script" uid="uid://cbm7g1c13kg6c" path="res://Scripts/simulation_handler.gd" id="3_8gbba"]
+[ext_resource type="Script" uid="uid://dumxgoma6y1ex" path="res://Scripts/ExampleAlgorithm.gd" id="4_jjvhh"]
+[ext_resource type="PackedScene" uid="uid://bjtwvhvapolgc" path="res://Scenes/UI.tscn" id="5_kry3j"]
 
-[node name="main" type="Node2D"]
+[node name="main" type="Node2D" unique_id=1365294299]
 
-[node name="MazeGenerator" parent="." instance=ExtResource("2_bo1nx")]
+[node name="MazeGenerator" parent="." unique_id=72700493 instance=ExtResource("2_bo1nx")]
+maze_width = 4
+maze_height = 4
 
-[node name="Robot" parent="." instance=ExtResource("1_jjgbg")]
+[node name="Robot" parent="." unique_id=1318233666 instance=ExtResource("1_jjgbg")]
 
-[node name="Camera2D" type="Camera2D" parent="Robot"]
+[node name="Camera2D" type="Camera2D" parent="Robot" unique_id=1725106823]
 
-[node name="SimulationHandler" type="Node2D" parent="." node_paths=PackedStringArray("robot", "maze_generator", "microcontroller")]
+[node name="SimulationHandler" type="Node2D" parent="." unique_id=932826266 node_paths=PackedStringArray("robot", "maze_generator", "microcontroller")]
+process_mode = 3
 script = ExtResource("3_8gbba")
 robot = NodePath("../Robot")
 maze_generator = NodePath("../MazeGenerator")
 microcontroller = NodePath("../Robot/MicroController")
+algorithm_script = ExtResource("4_jjvhh")
+
+[node name="UI" parent="." unique_id=1818794135 node_paths=PackedStringArray("maze_generator") instance=ExtResource("5_kry3j")]
+maze_generator = NodePath("../MazeGenerator")
 
 [editable path="Robot"]

@@ -211,7 +211,7 @@ func get_accelerometer_data() -> Dictionary:
 	}
 
 func get_magnetometer_data() -> Dictionary:
-	var earth_field_strength = 25.0  # μT
+	var earth_field_strength = 50.0  # μT
 	
 	# Earth magnetic field in world frame
 	var world_angle = deg_to_rad(magnetic_declination)
