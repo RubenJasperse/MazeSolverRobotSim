@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://ca75jqr8tg7q6"]
+[gd_scene format=3 uid="uid://ca75jqr8tg7q6"]
 
 [ext_resource type="Script" uid="uid://2tlr4y0vqhar" path="res://Scripts/RobotController.gd" id="1_2vrla"]
 [ext_resource type="Texture2D" uid="uid://1iqkrtqfnt48" path="res://Assets/Robot/svgviewer-output.svg" id="1_lp65t"]
@@ -8,38 +8,38 @@
 [sub_resource type="ConvexPolygonShape2D" id="ConvexPolygonShape2D_2vrla"]
 points = PackedVector2Array(30, 28, 30, -18, 27, -27, 20, -35, 0, -40, -20, -35, -27, -27, -30, -18, -30, 28, -18, 28, 18, 28)
 
-[node name="Robot" type="CharacterBody2D"]
+[node name="Robot" type="CharacterBody2D" unique_id=722499136]
 script = ExtResource("1_2vrla")
 
-[node name="Sensors" type="Node2D" parent="." node_paths=PackedStringArray("front_sensor", "left_sensor", "right_sensor")]
+[node name="Sensors" type="Node2D" parent="." unique_id=2063880973 node_paths=PackedStringArray("front_sensor", "left_sensor", "right_sensor")]
 script = ExtResource("2_6phhs")
 front_sensor = NodePath("front_sensor")
 left_sensor = NodePath("left_sensor")
 right_sensor = NodePath("right_sensor")
 
-[node name="front_sensor" type="RayCast2D" parent="Sensors"]
+[node name="front_sensor" type="RayCast2D" parent="Sensors" unique_id=154614792]
 position = Vector2(0, -35)
 target_position = Vector2(0, -25)
 collide_with_areas = true
 
-[node name="left_sensor" type="RayCast2D" parent="Sensors"]
-position = Vector2(-25, -25)
+[node name="left_sensor" type="RayCast2D" parent="Sensors" unique_id=2056067194]
+position = Vector2(-25, 0)
 rotation = -1.5708
 target_position = Vector2(0, -25)
 collide_with_areas = true
 
-[node name="right_sensor" type="RayCast2D" parent="Sensors"]
-position = Vector2(25, -25)
+[node name="right_sensor" type="RayCast2D" parent="Sensors" unique_id=267789207]
+position = Vector2(25, 0)
 rotation = 1.5708
 target_position = Vector2(0, -25)
 collide_with_areas = true
 
-[node name="Svgviewer-output" type="Sprite2D" parent="."]
+[node name="Svgviewer-output" type="Sprite2D" parent="." unique_id=639001708]
 texture = ExtResource("1_lp65t")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1953288425]
 shape = SubResource("ConvexPolygonShape2D_2vrla")
 
-[node name="MicroController" type="Node2D" parent="." node_paths=PackedStringArray("sensors_node")]
+[node name="MicroController" type="Node2D" parent="." unique_id=881724583 node_paths=PackedStringArray("sensors_node")]
 script = ExtResource("4_dwnub")
 sensors_node = NodePath("../Sensors")

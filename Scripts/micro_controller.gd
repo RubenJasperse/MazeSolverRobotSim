@@ -44,7 +44,6 @@ var right_motor_speed: float = 0.0
 # Whether drive_forward/backward is active
 var _driving: bool = false
 
-# Base voltage/speed sent to motors; negative = driving backward
 var _drive_base_speed: float = 0.0
 
 # Heading (gyro angle) to maintain while driving
